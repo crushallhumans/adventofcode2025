@@ -97,7 +97,6 @@ class testCase(unittest.TestCase):
 if __name__ == '__main__':
     try:
         sys.argv[1]
-    except:
         DEBUG = False
 
         username = 'crushing'
@@ -126,3 +125,5 @@ if __name__ == '__main__':
         ret = two_star(input_set)
         print (ret)
         print ('elapsed:',(time.time() * 1000) - start,'ms')
+    except Exception as e:
+        print(e)
