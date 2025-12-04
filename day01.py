@@ -1,7 +1,7 @@
 # adventofcode 2025
 # crushallhumans
-# puzzle N
-# 12/n/2025
+# puzzle 1
+# 12/01/2025
 
 import os
 import re
