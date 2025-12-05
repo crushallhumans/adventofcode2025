@@ -61,22 +61,20 @@ def two_star(param_set):
 
 
 
+
 #---------------------------------------------------------
-def P(*args, force = False, end = False):
+def P(*args, force = False, end = "\n"):
     if DEBUG or force:
         if not len([*args]):
             print('')
-            return None
-        if len([*args]) > 1:
-            if end:
-                print(' '.join(str(x) for x in [*args]),end = end)
-            else:
-                pp.pprint([*args])
         else:
-            if end:
-                print(*args,end = end)
+            if len([*args]) > 1:
+                if end:
+                    print(' '.join(str(x) for x in [*args]),end = end)
+                else:
+                    pp.pprint([*args])
             else:
-                pp.pprint(*args)
+                print([*args][0],end = end)
 
 
 class testCase(unittest.TestCase):
