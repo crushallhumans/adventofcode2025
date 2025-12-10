@@ -154,17 +154,6 @@ class CartesianTheater():
         # zip pairs them up: (p1, p2), (p2, p3), ... (last_p, first_p)
         return [i.length for i in list(map(ShapelyLineString, zip(ring.coords[:-1], ring.coords[1:])))]
 
-    def get_rect_size(self,i):
-        x_points = abs(
-            max(i[0][0],i[1][0]) - 
-            min(i[0][0],i[1][0])
-        ) + 1
-        y_points = abs(
-            max(i[0][1],i[1][1]) - 
-            min(i[0][1],i[1][1])
-        ) + 1
-        return(x_points * y_points)
-
     def get_all_rectangles(self):
         foo = combinations(self.points.keys(),2)
         pairs = combinations(self.points.keys(),2)
@@ -174,7 +163,7 @@ class CartesianTheater():
         for i in pairs:
             P(f'{nnn} / {nn}')
 
-            x = self.get_rect_size(i)
+            x = self.get_rect_size(*self.get_rect_minmax(i[0],i[1]))
 
             if x > largest:
                 largest = x
@@ -191,20 +180,72 @@ class CartesianTheater():
         max_y = int(max(y1, y2))
         return (min_x,min_y,max_x,max_y)
 
+    def get_rect_size(self,min_x, min_y, max_x, max_y):
+        x_points = abs(
+            max_x - 
+            min_x
+        ) + 1
+        y_points = abs(
+            max_y - 
+            min_y
+        ) + 1
+        return(x_points * y_points)
 
     def get_all_points_in_rectangle(self,point1,point2):
         min_x, min_y, max_x, max_y = self.get_rect_minmax(point1,point2)
-
-        # x_coords = range(min_x, max_x + 1)  # +1 to include max_x
-        # y_coords = range(min_y, max_y + 1)  # +1 to include max_y
-        # # Use itertools.product to get all combinations of x and y
-
-        pts_in_rect = self.get_rect_size((point1,point2))
-        P(pts_in_rect)
-        return(pts_in_rect,(min_x,min_y,max_x,max_y))
+        number_of_points_in_rect = self.get_rect_size(min_x, min_y, max_x, max_y)
+        P(number_of_points_in_rect)
+        return(number_of_points_in_rect,(min_x,min_y,max_x,max_y))
 
 
     def get_all_rectangles_within_polygon(self):
+        foo = combinations(self.points.keys(),2)
+        pairs = combinations(self.points.keys(),2)
+        largest = 0
+        nn = len(list(foo))
+        self.ordered_points.append(self.ordered_points[-1])
+        master_polygon = ShapelyPolygon(self.ordered_points)
+        if DEBUG:
+            for i in range(0,self.max_y):
+                for j in range(0,self.max_x):
+                    p = ShapelyPoint(j,i)
+                    if master_polygon.contains(p) or p.intersects(master_polygon.boundary):
+                        self.points_in_poly.add((j,i))
+
+            P(self)
+
+        nnn = 0
+        sized_rectangles = set()
+        print('building rect list')
+        start = (time.time() * 1000)
+        for i in pairs:
+            points_in_rect, maxs = self.get_all_points_in_rectangle(*i)
+            P(f'{nnn} / {nn} - pts_in_rect {points_in_rect}')
+
+            sized_rectangles.add((maxs,points_in_rect))
+            nnn += 1
+        print ('elapsed:',(time.time() * 1000) - start,'ms')
+
+        P(sized_rectangles)
+        print('resorting rectangles')
+        start = (time.time() * 1000)
+        sorted_rectangles = sorted(list(sized_rectangles), key = lambda a: -a[1])
+        print ('elapsed:',(time.time() * 1000) - start,'ms')
+        print('finding largest')
+        start = (time.time() * 1000)
+        for i in sorted_rectangles:
+            maxs = i[0]
+            zz = i[1]
+            P(i)
+            if zz > largest and master_polygon.contains(ShapelyBox(*maxs)):
+                print ('elapsed:',(time.time() * 1000) - start,'ms')
+                P(f'enclosed largest: {zz}' )
+                largest = zz
+                break
+
+        return int(largest)
+    
+# failed attempts below: 
         # most_xy = [0,0]
         # least_xy = [int(self.max_x),int(self.max_y)]
         # for ii in self.ordered_points:
@@ -252,33 +293,6 @@ class CartesianTheater():
         #         p = ShapelyPoint(x,y)
         #         if master_polygon.contains(p) or p.intersects(master_polygon.boundary):
         #             self.points_in_poly.add((x,y))
-        P(self)
-        foo = combinations(self.points.keys(),2)
-        pairs = combinations(self.points.keys(),2)
-        largest = 0
-        nn = len(list(foo))
-        self.ordered_points.append(self.ordered_points[-1])
-        master_polygon = ShapelyPolygon(self.ordered_points)
-
-        nnn = 0
-        sized_rectangles = set()
-        for i in pairs:
-            points_in_rect, maxs = self.get_all_points_in_rectangle(*i)
-            P(f'{nnn} / {nn} - pts_in_rect {points_in_rect}')
-
-            sized_rectangles.add((maxs,points_in_rect))
-            nnn += 1
-
-        P(sized_rectangles)
-        P('resorting rectangles')
-        for i in sorted(list(sized_rectangles), key = lambda a: -a[1]):
-            maxs = i[0]
-            zz = i[1]
-            P(i)
-            if zz > largest and master_polygon.contains(ShapelyBox(*maxs)):
-                P(f'enclosed largest: {zz}' )
-                largest = zz
-                break
 
 #        points_not_in_poly = set()
             # for j in points_in_rect:
@@ -318,8 +332,7 @@ class CartesianTheater():
 #            if points_in_rect.issubset(self.points_in_poly):
 #                P(len(points_in_rect))
 #                P(len(points_in_rect.difference(self.points_in_poly)))
-
-        return largest
+    
 
     def get_distances(self):
         for i in self.shapely_points.keys():
